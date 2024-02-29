@@ -1,0 +1,27 @@
+import boto3
+
+s3 = boto3.client('s3')
+
+def lambda_handler(event, context):
+    empty_buckets = []
+    
+    # Get list of all S3 buckets
+    response = s3.list_buckets()
+    
+    for bucket in response['Buckets']:
+        bucket_name = bucket['Name']
+        
+        # Check if the bucket is empty
+        response = s3.list_objects_v2(Bucket=bucket_name)
+        
+        if 'Contents' not in response or len(response['Contents']) == 0:
+            empty_buckets.append(bucket_name)
+    
+    # Delete empty buckets
+    for bucket_name in empty_buckets:
+        s3.delete_bucket(Bucket=bucket_name)
+    
+    return {
+        'statusCode': 200,
+        'body': f'Deleted {len(empty_buckets)} empty buckets'
+    }
